@@ -13,8 +13,8 @@ jobs:
       packages: write
 
     steps:
-      - name: Clone upstream Open WebUI
-        run: git clone --depth=1 https://github.com/open-webui/open-webui.git .
+      - name: Checkout repo (Dockerfile only)
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -30,6 +30,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ghcr.io/oki0ki/ghcrwebui:latest
-          build-args: USE_SLIM=true
+          no-cache: true
+          tags: |
+            ghcr.io/oki0ki/ghcrwebui:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/oki0ki/ghcrwebui
+            org.opencontainers.image.description=Open WebUI - hardcoded config
