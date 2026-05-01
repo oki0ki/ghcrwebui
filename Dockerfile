@@ -1,12 +1,24 @@
 # syntax=docker/dockerfile:1
+# Buduje z oficjalnego open-webui i nadpisuje ZMODYFIKOWANE pliki z tego repo
+
 FROM node:22-alpine3.20 AS build
 WORKDIR /app
 RUN apk add --no-cache git
+
+# 1. Sklonuj bazowy open-webui
 RUN git clone --depth=1 https://github.com/open-webui/open-webui.git .
+
+# 2. NADPISZ zmodyfikowanymi plikami z TWOJEGO repo
+COPY src/routes/+layout.svelte src/routes/+layout.svelte
+COPY src/routes/(app)/+layout.svelte "src/routes/(app)/+layout.svelte"
+COPY src/lib/components/chat/MessageInput.svelte src/lib/components/chat/MessageInput.svelte
+
+# 3. Zbuduj frontend z TWOIMI zmianami
 RUN npm ci --force
-ENV APP_BUILD_HASH=ghcrwebui
+ENV APP_BUILD_HASH=ghcrwebui-custom
 RUN npm run build
 
+# --- Backend image ---
 FROM python:3.11-slim-bookworm
 
 ENV PORT=7860 \
@@ -23,7 +35,7 @@ ENV PORT=7860 \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl build-essential python3-dev ffmpeg pandoc gcc netcat-openbsd jq \
+    curl build-essential python3-dev ffmpeg pandoc gcc netcat-openbsd jq \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/backend
