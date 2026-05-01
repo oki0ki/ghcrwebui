@@ -1,0 +1,40 @@
+FROM python:3.11-slim-bookworm
+
+# Hardcoded config - no env variables needed
+ENV PORT=7860 \
+    HOST=0.0.0.0 \
+    OPENAI_API_BASE_URL=https://generative-api-g7qi.encr.app/v1 \
+    OPENAI_API_KEY=connect \
+    DEFAULT_LOCALE=pl \
+    WEBUI_SECRET_KEY=ghcrwebui-secret-2025 \
+    SCARF_NO_ANALYTICS=true \
+    DO_NOT_TRACK=true \
+    ANONYMIZED_TELEMETRY=false \
+    DOCKER=true \
+    ENV=prod
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl build-essential python3-dev ffmpeg pandoc gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+RUN git clone --depth=1 https://github.com/open-webui/open-webui.git /tmp/owui \
+    && cp -r /tmp/owui/backend /app/backend \
+    && cp /tmp/owui/pyproject.toml /app/ \
+    && rm -rf /tmp/owui
+
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system -r /app/backend/requirements.txt --no-cache-dir
+
+COPY build /app/build
+COPY package.json /app/package.json
+COPY CHANGELOG.md /app/CHANGELOG.md
+
+EXPOSE 7860
+
+WORKDIR /app/backend
+
+CMD ["bash", "start.sh"]
